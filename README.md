@@ -1,14 +1,10 @@
 # Xoodyak Ruby Gem
 
-<div align="center">
-  <h1>Xoodyak for Ruby 💎</h1>
-  <p><strong>A blazing fast, secure, and modern Rust-backed Ruby implementation of the Xoodyak cryptographic scheme</strong></p>
+A blazing fast, secure, and modern Rust-backed Ruby implementation of the Xoodyak cryptographic scheme.
 
-  <a href="https://github.com/midnight-wonderer/xoodyak-rb/actions"><img src="https://img.shields.io/github/actions/workflow/status/midnight-wonderer/xoodyak-rb/main.yml?branch=main&style=flat-square" alt="CI Status"></a>
-  <a href="https://badge.fury.io/rb/xoodyak"><img src="https://img.shields.io/gem/v/xoodyak.svg?style=flat-square" alt="Gem Version"></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-BSD--2--Clause-blue.svg?style=flat-square" alt="License"></a>
-  <a href="sig/xoodyak.rbs"><img src="https://img.shields.io/badge/types-RBS-informational.svg?style=flat-square" alt="RBS Types"></a>
-</div>
+[![Gem Version](https://img.shields.io/gem/v/xoodyak.svg?style=flat-square)](https://badge.fury.io/rb/xoodyak)
+[![License](https://img.shields.io/badge/license-BSD--2--Clause-blue.svg?style=flat-square)](https://github.com/midnight-wonderer/xoodyak-rb/blob/main/LICENSE.md)
+[![RBS Types](https://img.shields.io/badge/types-RBS-informational.svg?style=flat-square)](https://github.com/midnight-wonderer/xoodyak-rb/blob/main/sig/xoodyak.rbs)
 
 ---
 
