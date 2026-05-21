@@ -19,7 +19,5 @@ C
 puts("digest_use_rb_ext_resolve_symbol=#{digest_use_rb_ext_resolve_symbol}")
 
 create_rust_makefile("xoodyak/xoodyak") do |r|
-  if digest_use_rb_ext_resolve_symbol
-    r.extra_rustflags = ["--cfg digest_use_rb_ext_resolve_symbol"]
-  end
+  r.extra_rustflags = ["--cfg digest_use_rb_ext_resolve_symbol"] if digest_use_rb_ext_resolve_symbol
 end

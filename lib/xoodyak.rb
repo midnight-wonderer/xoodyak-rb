@@ -25,4 +25,3 @@ end
 module Digest
   Xoodyak = ::Xoodyak::Digest
 end
-

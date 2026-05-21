@@ -5,8 +5,8 @@ require_relative "lib/xoodyak/version"
 Gem::Specification.new do |spec|
   spec.name = "xoodyak"
   spec.version = Xoodyak::VERSION
-  spec.author = 'Sarun Rattanasiri'
-  spec.email = 'midnight_w@gmx.tw'
+  spec.author = "Sarun Rattanasiri"
+  spec.email = "midnight_w@gmx.tw"
 
   spec.summary = "A fast, memory-safe Rust-backed Ruby implementation of the Xoodyak cryptographic scheme"
   spec.description = "A Ruby wrapper for the Xoodyak cryptographic scheme, built in Rust using magnus and rb-sys. " \
