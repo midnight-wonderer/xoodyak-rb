@@ -2,7 +2,6 @@
 name = "xoodyak"
 version = "0.1.0"
 edition = "2021"
-authors = ["TODO: Write your name <TODO: Write your email address>"]
 publish = false
 
 [lib]
