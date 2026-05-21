@@ -5,35 +5,25 @@ require_relative "lib/xoodyak/version"
 Gem::Specification.new do |spec|
   spec.name = "xoodyak"
   spec.version = Xoodyak::VERSION
-  spec.authors = ["TODO: Write your name"]
-  spec.email = ["TODO: Write your email address"]
+  spec.author = 'Sarun Rattanasiri'
+  spec.email = 'midnight_w@gmx.tw'
 
-  spec.summary = "TODO: Write a short summary, because RubyGems requires one."
-  spec.description = "TODO: Write a longer description or delete this line."
-  spec.homepage = "TODO: Put your gem's website or public repo URL here."
+  spec.summary = "A fast, memory-safe Rust-backed Ruby implementation of the Xoodyak cryptographic scheme"
+  spec.description = "A Ruby wrapper for the Xoodyak cryptographic scheme, built in Rust using magnus and rb-sys. " \
+                     "It supports hashing (unkeyed mode), symmetric encryption and AEAD (keyed mode), " \
+                     "forward secrecy (state ratcheting), and integrates with the standard Ruby Digest API."
+  spec.homepage = "https://github.com/midnight-wonderer/xoodyak-rb"
   spec.required_ruby_version = ">= 3.2.0"
-  spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
-  spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "TODO: Put your gem's public repo URL here."
+  spec.license = "BSD-2-Clause"
 
-  # Specify which files should be added to the gem when it is released.
-  # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
-  gemspec = File.basename(__FILE__)
-  spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
-    ls.readlines("\x0", chomp: true).reject do |f|
-      (f == gemspec) ||
-        f.start_with?(*%w[bin/ Gemfile .gitignore .rspec spec/ .github/ .rubocop.yml])
-    end
+  spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
+
+  spec.files = Dir["LICENSE.md", "README.md", "lib/**/*", "ext/**/*", "sig/**/*"].reject do |f|
+    File.directory?(f) || f.end_with?(".so") || f.end_with?(".bundle")
   end
-  spec.bindir = "exe"
-  spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
   spec.extensions = ["ext/xoodyak/extconf.rb"]
 
-  # Uncomment to register a new dependency of your gem
-  # spec.add_dependency "example-gem", "~> 1.0"
   spec.add_dependency "rb_sys", "~> 0.9.91"
-
-  # For more information and examples about making a new gem, check out our
-  # guide at: https://bundler.io/guides/creating_gem.html
 end
