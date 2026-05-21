@@ -3,7 +3,7 @@ use std::ffi::{c_int, c_uchar, c_void};
 use std::mem::MaybeUninit;
 use std::os::raw::c_char;
 use magnus::{
-    prelude::*, scan_args::scan_args, Error, RString, Ruby, Value,
+    prelude::*, scan_args::scan_args, Error, ExceptionClass, RString, Ruby, Value,
 };
 use rb_sys::{VALUE, size_t};
 use xoodyak::{XoodyakHash, XoodyakKeyed, XoodyakCommon, XoodyakError, XOODYAK_AUTH_TAG_BYTES};
@@ -166,6 +166,23 @@ impl XoodyakDigest {
     }
 }
 
+fn get_error_class(name: &str) -> Option<ExceptionClass> {
+    let ruby = Ruby::get().unwrap();
+    ruby.class_object()
+        .const_get::<_, magnus::RClass>("Xoodyak")
+        .ok()
+        .and_then(|xoodyak| xoodyak.const_get::<_, ExceptionClass>(name).ok())
+}
+
+fn keyed_mode_error(msg: &'static str) -> Error {
+    let ruby = Ruby::get().unwrap();
+    if let Some(error_class) = get_error_class("KeyedModeError") {
+        Error::new(error_class, msg)
+    } else {
+        Error::new(ruby.exception_runtime_error(), msg)
+    }
+}
+
 // Custom error mapping
 fn map_xoodyak_err(err: XoodyakError) -> Error {
     let ruby = Ruby::get().unwrap();
@@ -180,12 +197,11 @@ fn map_xoodyak_err(err: XoodyakError) -> Error {
             Error::new(ruby.exception_arg_error(), "key required")
         }
         XoodyakError::TagMismatch => {
-            if let Ok(xoodyak_class) = ruby.define_class("Xoodyak", ruby.class_object()) {
-                if let Ok(error_class) = xoodyak_class.const_get::<_, magnus::ExceptionClass>("Error") {
-                    return Error::new(error_class, "tag mismatch");
-                }
+            if let Some(error_class) = get_error_class("VerificationError") {
+                Error::new(error_class, "tag mismatch")
+            } else {
+                Error::new(ruby.exception_runtime_error(), "tag mismatch")
             }
-            Error::new(ruby.exception_runtime_error(), "tag mismatch")
         }
     }
 }
@@ -282,10 +298,7 @@ impl Xoodyak {
     fn encrypt(&self, bin: RString) -> Result<RString, Error> {
         let bin_bytes = unsafe { bin.as_slice() };
         match &mut *self.state.borrow_mut() {
-            XoodyakState::Unkeyed(_) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                "encrypt is only supported in keyed mode",
-            )),
+            XoodyakState::Unkeyed(_) => Err(keyed_mode_error("encrypt is only supported in keyed mode")),
             XoodyakState::Keyed(ref mut k) => {
                 let mut out = vec![0u8; bin_bytes.len()];
                 k.encrypt(&mut out, bin_bytes).map_err(map_xoodyak_err)?;
@@ -297,10 +310,7 @@ impl Xoodyak {
     fn decrypt(&self, bin: RString) -> Result<RString, Error> {
         let bin_bytes = unsafe { bin.as_slice() };
         match &mut *self.state.borrow_mut() {
-            XoodyakState::Unkeyed(_) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                "decrypt is only supported in keyed mode",
-            )),
+            XoodyakState::Unkeyed(_) => Err(keyed_mode_error("decrypt is only supported in keyed mode")),
             XoodyakState::Keyed(ref mut k) => {
                 let mut out = vec![0u8; bin_bytes.len()];
                 k.decrypt(&mut out, bin_bytes).map_err(map_xoodyak_err)?;
@@ -312,10 +322,7 @@ impl Xoodyak {
     fn aead_encrypt(&self, bin: RString) -> Result<RString, Error> {
         let bin_bytes = unsafe { bin.as_slice() };
         match &mut *self.state.borrow_mut() {
-            XoodyakState::Unkeyed(_) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                "aead_encrypt is only supported in keyed mode",
-            )),
+            XoodyakState::Unkeyed(_) => Err(keyed_mode_error("aead_encrypt is only supported in keyed mode")),
             XoodyakState::Keyed(ref mut k) => {
                 let mut out = vec![0u8; bin_bytes.len() + XOODYAK_AUTH_TAG_BYTES];
                 k.aead_encrypt(&mut out, Some(bin_bytes)).map_err(map_xoodyak_err)?;
@@ -327,10 +334,7 @@ impl Xoodyak {
     fn aead_decrypt(&self, bin: RString) -> Result<RString, Error> {
         let bin_bytes = unsafe { bin.as_slice() };
         match &mut *self.state.borrow_mut() {
-            XoodyakState::Unkeyed(_) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                "aead_decrypt is only supported in keyed mode",
-            )),
+            XoodyakState::Unkeyed(_) => Err(keyed_mode_error("aead_decrypt is only supported in keyed mode")),
             XoodyakState::Keyed(ref mut k) => {
                 if bin_bytes.len() < XOODYAK_AUTH_TAG_BYTES {
                     return Err(Error::new(
@@ -348,10 +352,7 @@ impl Xoodyak {
     fn aead_encrypt_detached(&self, bin: RString) -> Result<magnus::RArray, Error> {
         let bin_bytes = unsafe { bin.as_slice() };
         match &mut *self.state.borrow_mut() {
-            XoodyakState::Unkeyed(_) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                "aead_encrypt_detached is only supported in keyed mode",
-            )),
+            XoodyakState::Unkeyed(_) => Err(keyed_mode_error("aead_encrypt_detached is only supported in keyed mode")),
             XoodyakState::Keyed(ref mut k) => {
                 let mut out = vec![0u8; bin_bytes.len()];
                 let tag = k.aead_encrypt_detached(&mut out, Some(bin_bytes)).map_err(map_xoodyak_err)?;
@@ -367,10 +368,7 @@ impl Xoodyak {
         let bin_bytes = unsafe { bin.as_slice() };
         let tag_bytes = unsafe { tag.as_slice() };
         match &mut *self.state.borrow_mut() {
-            XoodyakState::Unkeyed(_) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                "aead_decrypt_detached is only supported in keyed mode",
-            )),
+            XoodyakState::Unkeyed(_) => Err(keyed_mode_error("aead_decrypt_detached is only supported in keyed mode")),
             XoodyakState::Keyed(ref mut k) => {
                 let t_array: [u8; XOODYAK_AUTH_TAG_BYTES] = tag_bytes.try_into().map_err(|_| {
                     Error::new(Ruby::get().unwrap().exception_arg_error(), "tag must be 16 bytes")
@@ -385,10 +383,7 @@ impl Xoodyak {
 
     fn ratchet(&self) -> Result<(), Error> {
         match &mut *self.state.borrow_mut() {
-            XoodyakState::Unkeyed(_) => Err(Error::new(
-                Ruby::get().unwrap().exception_runtime_error(),
-                "ratchet is only supported in keyed mode",
-            )),
+            XoodyakState::Unkeyed(_) => Err(keyed_mode_error("ratchet is only supported in keyed mode")),
             XoodyakState::Keyed(ref mut k) => {
                 k.ratchet();
                 Ok(())
@@ -415,8 +410,10 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     class.define_method("aead_decrypt_detached", magnus::method!(Xoodyak::aead_decrypt_detached, 2))?;
     class.define_method("ratchet", magnus::method!(Xoodyak::ratchet, 0))?;
 
-    // Define the custom Error class under Xoodyak class
-    class.define_class("Error", ruby.exception_standard_error().as_r_class())?;
+    // Define the custom Error classes under Xoodyak class
+    let error = class.define_error("Error", ruby.exception_standard_error())?;
+    class.define_error("KeyedModeError", error)?;
+    class.define_error("VerificationError", error)?;
 
     // Define Digest subclassing Digest::Base nested under Xoodyak class
     ruby.require("digest")?;

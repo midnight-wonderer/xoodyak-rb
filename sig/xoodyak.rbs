@@ -4,6 +4,12 @@ class Xoodyak
   class Error < ::StandardError
   end
 
+  class KeyedModeError < Error
+  end
+
+  class VerificationError < Error
+  end
+
   class Digest < ::Digest::Base
   end
 

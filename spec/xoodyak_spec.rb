@@ -50,13 +50,13 @@ RSpec.describe Xoodyak do
 
     it "raises error if encrypt or decrypt are called in unkeyed mode" do
       st = Xoodyak.new
-      expect { st.encrypt("msg") }.to raise_error(RuntimeError)
-      expect { st.decrypt("msg") }.to raise_error(RuntimeError)
-      expect { st.aead_encrypt("msg") }.to raise_error(RuntimeError)
-      expect { st.aead_decrypt("msg") }.to raise_error(RuntimeError)
-      expect { st.aead_encrypt_detached("msg") }.to raise_error(RuntimeError)
-      expect { st.aead_decrypt_detached("msg", "tag") }.to raise_error(RuntimeError)
-      expect { st.ratchet }.to raise_error(RuntimeError)
+      expect { st.encrypt("msg") }.to raise_error(Xoodyak::KeyedModeError)
+      expect { st.decrypt("msg") }.to raise_error(Xoodyak::KeyedModeError)
+      expect { st.aead_encrypt("msg") }.to raise_error(Xoodyak::KeyedModeError)
+      expect { st.aead_decrypt("msg") }.to raise_error(Xoodyak::KeyedModeError)
+      expect { st.aead_encrypt_detached("msg") }.to raise_error(Xoodyak::KeyedModeError)
+      expect { st.aead_decrypt_detached("msg", "tag") }.to raise_error(Xoodyak::KeyedModeError)
+      expect { st.ratchet }.to raise_error(Xoodyak::KeyedModeError)
     end
   end
 
@@ -90,7 +90,7 @@ RSpec.describe Xoodyak do
 
       st2 = Xoodyak.new("key")
       st2.absorb("wrong_ad")
-      expect { st2.aead_decrypt(ct) }.to raise_error(Xoodyak::Error, "tag mismatch")
+      expect { st2.aead_decrypt(ct) }.to raise_error(Xoodyak::VerificationError, "tag mismatch")
     end
 
     it "supports detached AEAD encrypt and decrypt" do
