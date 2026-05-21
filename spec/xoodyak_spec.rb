@@ -180,6 +180,18 @@ RSpec.describe Xoodyak do
       expect(d.hexdigest).to eq(expected_hex)
     end
 
+    it "computes correct digest for multiple updates compared to single update" do
+      m1 = "Lorem Ipsum is simply dummy text "
+      m2 = "of the printing and typesetting industry."
+      
+      d = Xoodyak::Digest.new
+      d.update(m1)
+      d.update(m2)
+      
+      expected = Xoodyak::Digest.new.update(m1 + m2).hexdigest
+      expect(d.hexdigest).to eq(expected)
+    end
+
     it "resets state correctly" do
       d = Xoodyak::Digest.new
       d.update("something")

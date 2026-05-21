@@ -79,6 +79,13 @@ pub unsafe fn rb_digest_make_metadata(meta: &'static RbDigestMetadataT) -> VALUE
     }
 }
 
+struct RbXoodyakDigestCtx {
+    hash: XoodyakHash,
+    buffer: [u8; 16],
+    buf_len: usize,
+    first_block_absorbed: bool,
+}
+
 // Struct to configure dynamic digest metadata
 struct XoodyakDigest;
 
@@ -91,7 +98,7 @@ impl XoodyakDigest {
             api_version: RUBY_DIGEST_API_VERSION,
             digest_len: XoodyakDigest::DIGEST_LEN as _,
             block_len: XoodyakDigest::BLOCK_LEN as _,
-            ctx_size: std::mem::size_of::<XoodyakHash>() as _,
+            ctx_size: std::mem::size_of::<RbXoodyakDigestCtx>() as _,
             init_func: XoodyakDigest::init_in_place,
             update_func: XoodyakDigest::update,
             finish_func: XoodyakDigest::finish,
@@ -100,26 +107,61 @@ impl XoodyakDigest {
     }
 
     extern "C" fn init_in_place(ctx: *mut c_void) -> c_int {
-        let ctx = ctx as *mut MaybeUninit<XoodyakHash>;
+        let ctx = ctx as *mut MaybeUninit<RbXoodyakDigestCtx>;
         let ctx = unsafe { &mut *ctx };
-        ctx.write(XoodyakHash::new());
+        ctx.write(RbXoodyakDigestCtx {
+            hash: XoodyakHash::new(),
+            buffer: [0u8; 16],
+            buf_len: 0,
+            first_block_absorbed: false,
+        });
         true as _
     }
 
     extern "C" fn update(ctx: *mut c_void, data: *mut c_uchar, len: size_t) {
-        let ctx = ctx as *mut MaybeUninit<XoodyakHash>;
+        let ctx = ctx as *mut MaybeUninit<RbXoodyakDigestCtx>;
         let ctx = unsafe { &mut *ctx };
         let ctx = unsafe { ctx.assume_init_mut() };
-        let slice = unsafe { std::slice::from_raw_parts(data, len as _) };
-        ctx.absorb(slice);
+        let mut slice = unsafe { std::slice::from_raw_parts(data, len as _) };
+
+        while !slice.is_empty() {
+            let space = 16 - ctx.buf_len;
+            if slice.len() >= space {
+                ctx.buffer[ctx.buf_len..16].copy_from_slice(&slice[..space]);
+                slice = &slice[space..];
+
+                if !ctx.first_block_absorbed {
+                    ctx.hash.absorb(&ctx.buffer);
+                    ctx.first_block_absorbed = true;
+                } else {
+                    ctx.hash.absorb_more(&ctx.buffer, 16);
+                }
+                ctx.buf_len = 0;
+            } else {
+                ctx.buffer[ctx.buf_len..ctx.buf_len + slice.len()].copy_from_slice(slice);
+                ctx.buf_len += slice.len();
+                break;
+            }
+        }
     }
 
     extern "C" fn finish(ctx: *mut c_void, digest: *mut c_uchar) -> c_int {
-        let ctx = ctx as *mut MaybeUninit<XoodyakHash>;
+        let ctx = ctx as *mut MaybeUninit<RbXoodyakDigestCtx>;
         let ctx = unsafe { &mut *ctx };
         let ctx = unsafe { ctx.assume_init_mut() };
+
+        if ctx.buf_len > 0 {
+            if !ctx.first_block_absorbed {
+                ctx.hash.absorb(&ctx.buffer[..ctx.buf_len]);
+                ctx.first_block_absorbed = true;
+            } else {
+                ctx.hash.absorb_more(&ctx.buffer[..ctx.buf_len], 16);
+            }
+            ctx.buf_len = 0;
+        }
+
         let outbuf = unsafe { std::slice::from_raw_parts_mut(digest, Self::DIGEST_LEN) };
-        ctx.squeeze(outbuf);
+        ctx.hash.squeeze(outbuf);
         true as _
     }
 }
