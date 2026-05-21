@@ -13,10 +13,12 @@ RSpec.describe Xoodyak do
       expect(st).to be_a(Xoodyak)
     end
 
-    it "raises ArgumentError if nonce, key_id, or counter are passed without key" do
-      expect { Xoodyak.new(nil, "nonce") }.to raise_error(ArgumentError)
-      expect { Xoodyak.new(nil, nil, "key_id") }.to raise_error(ArgumentError)
-      expect { Xoodyak.new(nil, nil, nil, "counter") }.to raise_error(ArgumentError)
+    it "raises Xoodyak::ArgumentError if nonce, key_id, or counter are passed without key" do
+      expect { Xoodyak.new(nil, "nonce") }.to raise_error(Xoodyak::ArgumentError)
+      expect { Xoodyak.new(nil, nil, "key_id") }.to raise_error(Xoodyak::ArgumentError)
+      expect { Xoodyak.new(nil, nil, nil, "counter") }.to raise_error(Xoodyak::ArgumentError)
+      expect { Xoodyak.new(nil, nil, nil, "counter") }.to raise_error(Xoodyak::Error)
+      expect { Xoodyak.new(nil, nil, nil, "counter") }.to raise_error(::ArgumentError)
     end
 
     it "initializes in keyed mode when key is provided" do
@@ -57,6 +59,7 @@ RSpec.describe Xoodyak do
       expect { st.aead_encrypt_detached("msg") }.to raise_error(Xoodyak::KeyedModeError)
       expect { st.aead_decrypt_detached("msg", "tag") }.to raise_error(Xoodyak::KeyedModeError)
       expect { st.ratchet }.to raise_error(Xoodyak::KeyedModeError)
+      expect { st.encrypt("msg") }.to raise_error(Xoodyak::Error)
     end
   end
 
@@ -90,7 +93,8 @@ RSpec.describe Xoodyak do
 
       st2 = Xoodyak.new("key")
       st2.absorb("wrong_ad")
-      expect { st2.aead_decrypt(ct) }.to raise_error(Xoodyak::VerificationError, "tag mismatch")
+      expect { st2.dup.aead_decrypt(ct) }.to raise_error(Xoodyak::VerificationError)
+      expect { st2.dup.aead_decrypt(ct) }.to raise_error(Xoodyak::Error)
     end
 
     it "supports detached AEAD encrypt and decrypt" do
@@ -108,6 +112,16 @@ RSpec.describe Xoodyak do
       st2.absorb("ad")
       decrypted = st2.aead_decrypt_detached(ct, tag)
       expect(decrypted).to eq("message")
+    end
+
+    it "raises Xoodyak::ArgumentError on aead_decrypt when ciphertext is too short" do
+      st = Xoodyak.new("key")
+      expect { st.aead_decrypt("short") }.to raise_error(Xoodyak::ArgumentError)
+    end
+
+    it "raises Xoodyak::ArgumentError on aead_decrypt_detached when tag is not 16 bytes" do
+      st = Xoodyak.new("key")
+      expect { st.aead_decrypt_detached("msg", "short_tag") }.to raise_error(Xoodyak::ArgumentError)
     end
 
     it "can ratchet the state" do

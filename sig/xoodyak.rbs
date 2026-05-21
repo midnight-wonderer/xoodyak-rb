@@ -1,13 +1,19 @@
 class Xoodyak
   VERSION: String
 
-  class Error < ::StandardError
+  module Error
   end
 
-  class KeyedModeError < Error
+  class KeyedModeError < ::StandardError
+    include Error
   end
 
-  class VerificationError < Error
+  class VerificationError < ::StandardError
+    include Error
+  end
+
+  class ArgumentError < ::ArgumentError
+    include Error
   end
 
   class Digest < ::Digest::Base

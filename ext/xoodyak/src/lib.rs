@@ -183,26 +183,31 @@ fn keyed_mode_error(msg: &'static str) -> Error {
     }
 }
 
+fn argument_error(msg: &'static str) -> Error {
+    let ruby = Ruby::get().unwrap();
+    if let Some(error_class) = get_error_class("ArgumentError") {
+        Error::new(error_class, msg)
+    } else {
+        Error::new(ruby.exception_arg_error(), msg)
+    }
+}
+
+fn verification_error(msg: &'static str) -> Error {
+    let ruby = Ruby::get().unwrap();
+    if let Some(error_class) = get_error_class("VerificationError") {
+        Error::new(error_class, msg)
+    } else {
+        Error::new(ruby.exception_runtime_error(), msg)
+    }
+}
+
 // Custom error mapping
 fn map_xoodyak_err(err: XoodyakError) -> Error {
-    let ruby = Ruby::get().unwrap();
     match err {
-        XoodyakError::InvalidBufferLength => {
-            Error::new(ruby.exception_arg_error(), "invalid buffer length")
-        }
-        XoodyakError::InvalidParameterLength => {
-            Error::new(ruby.exception_arg_error(), "invalid parameter length")
-        }
-        XoodyakError::KeyRequired => {
-            Error::new(ruby.exception_arg_error(), "key required")
-        }
-        XoodyakError::TagMismatch => {
-            if let Some(error_class) = get_error_class("VerificationError") {
-                Error::new(error_class, "tag mismatch")
-            } else {
-                Error::new(ruby.exception_runtime_error(), "tag mismatch")
-            }
-        }
+        XoodyakError::InvalidBufferLength => argument_error("invalid buffer length"),
+        XoodyakError::InvalidParameterLength => argument_error("invalid parameter length"),
+        XoodyakError::KeyRequired => argument_error("key required"),
+        XoodyakError::TagMismatch => verification_error("tag mismatch"),
     }
 }
 
@@ -253,8 +258,7 @@ impl Xoodyak {
             *rb_self.state.borrow_mut() = XoodyakState::Keyed(keyed);
         } else {
             if nonce.is_some() || key_id.is_some() || counter.is_some() {
-                return Err(Error::new(
-                    Ruby::get().unwrap().exception_arg_error(),
+                return Err(argument_error(
                     "nonce, key_id, and counter can only be used in keyed mode (when key is provided)",
                 ));
             }
@@ -337,10 +341,7 @@ impl Xoodyak {
             XoodyakState::Unkeyed(_) => Err(keyed_mode_error("aead_decrypt is only supported in keyed mode")),
             XoodyakState::Keyed(ref mut k) => {
                 if bin_bytes.len() < XOODYAK_AUTH_TAG_BYTES {
-                    return Err(Error::new(
-                        Ruby::get().unwrap().exception_arg_error(),
-                        "ciphertext is too short to contain a tag",
-                    ));
+                    return Err(argument_error("ciphertext is too short to contain a tag"));
                 }
                 let mut out = vec![0u8; bin_bytes.len() - XOODYAK_AUTH_TAG_BYTES];
                 k.aead_decrypt(&mut out, bin_bytes).map_err(map_xoodyak_err)?;
@@ -371,7 +372,7 @@ impl Xoodyak {
             XoodyakState::Unkeyed(_) => Err(keyed_mode_error("aead_decrypt_detached is only supported in keyed mode")),
             XoodyakState::Keyed(ref mut k) => {
                 let t_array: [u8; XOODYAK_AUTH_TAG_BYTES] = tag_bytes.try_into().map_err(|_| {
-                    Error::new(Ruby::get().unwrap().exception_arg_error(), "tag must be 16 bytes")
+                    argument_error("tag must be 16 bytes")
                 })?;
                 let mut out = vec![0u8; bin_bytes.len()];
                 k.aead_decrypt_detached(&mut out, &t_array.into(), Some(bin_bytes))
@@ -410,10 +411,17 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     class.define_method("aead_decrypt_detached", magnus::method!(Xoodyak::aead_decrypt_detached, 2))?;
     class.define_method("ratchet", magnus::method!(Xoodyak::ratchet, 0))?;
 
-    // Define the custom Error classes under Xoodyak class
-    let error = class.define_error("Error", ruby.exception_standard_error())?;
-    class.define_error("KeyedModeError", error)?;
-    class.define_error("VerificationError", error)?;
+    // Define the custom Error classes/modules under Xoodyak class
+    let error_module = class.define_module("Error")?;
+
+    let keyed_mode_error = class.define_error("KeyedModeError", ruby.exception_standard_error())?;
+    keyed_mode_error.include_module(error_module)?;
+
+    let verification_error = class.define_error("VerificationError", ruby.exception_standard_error())?;
+    verification_error.include_module(error_module)?;
+
+    let argument_error = class.define_error("ArgumentError", ruby.exception_arg_error())?;
+    argument_error.include_module(error_module)?;
 
     // Define Digest subclassing Digest::Base nested under Xoodyak class
     ruby.require("digest")?;
