@@ -1,4 +1,22 @@
-module Xoodyak
+class Xoodyak
   VERSION: String
-  # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+
+  class Error < ::StandardError
+  end
+
+  class Digest < ::Digest::Base
+  end
+
+  def initialize: (?String? key, ?String? nonce, ?String? key_id, ?String? counter) -> void
+  def initialize_copy: (Xoodyak other) -> void
+  def absorb: (String bin) -> void
+  def squeeze: (Integer len) -> String
+  def squeeze_key: (Integer len) -> String
+  def encrypt: (String bin) -> String
+  def decrypt: (String bin) -> String
+  def aead_encrypt: (String bin) -> String
+  def aead_decrypt: (String bin) -> String
+  def aead_encrypt_detached: (String bin) -> [String, String]
+  def aead_decrypt_detached: (String bin, String tag) -> String
+  def ratchet: () -> void
 end
