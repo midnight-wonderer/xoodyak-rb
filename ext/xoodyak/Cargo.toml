@@ -9,11 +9,17 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-magnus = { version = "0.8.2" }
+magnus = { version = "0.8.2", features = ["rb-sys"] }
 rb-sys = { version = "0.9", features = ["stable-api-compiled-fallback"] }
+xoodyak = "0.8.4"
 
 [build-dependencies]
 rb-sys-env = "0.2.2"
 
 [dev-dependencies]
 rb-sys-test-helpers = { version = "0.2.2" }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+  'cfg(digest_use_rb_ext_resolve_symbol)',
+] }
