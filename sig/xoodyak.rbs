@@ -20,7 +20,6 @@ class Xoodyak
   end
 
   def initialize: (?String? key, ?nonce: String?, ?key_id: String?, ?counter: String?) -> void
-  def initialize_copy: (Xoodyak other) -> void
   def absorb: (String bin) -> void
   def squeeze: (Integer len) -> String
   def squeeze_key: (Integer len) -> String
