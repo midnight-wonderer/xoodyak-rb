@@ -17,7 +17,8 @@ jobs:
     strategy:
       matrix:
         ruby:
-          - '4.0.4'
+          - '3.4'
+          - '4.0'
 
     steps:
       - uses: actions/checkout@v6
@@ -29,6 +30,7 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
           cargo-cache: true
+          cache-version: ruby-${{ matrix.ruby }}
           rubygems: '4.0.10'
       - name: Run the default task
         run: bundle exec rake
