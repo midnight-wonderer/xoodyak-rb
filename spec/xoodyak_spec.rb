@@ -14,11 +14,15 @@ RSpec.describe Xoodyak do
     end
 
     it "raises Xoodyak::ArgumentError if nonce, key_id, or counter are passed without key" do
-      expect { Xoodyak.new(nil, "nonce") }.to raise_error(Xoodyak::ArgumentError)
-      expect { Xoodyak.new(nil, nil, "key_id") }.to raise_error(Xoodyak::ArgumentError)
-      expect { Xoodyak.new(nil, nil, nil, "counter") }.to raise_error(Xoodyak::ArgumentError)
-      expect { Xoodyak.new(nil, nil, nil, "counter") }.to raise_error(Xoodyak::Error)
-      expect { Xoodyak.new(nil, nil, nil, "counter") }.to raise_error(::ArgumentError)
+      expect { Xoodyak.new(nonce: "nonce") }.to raise_error(Xoodyak::ArgumentError)
+      expect { Xoodyak.new(key_id: "key_id") }.to raise_error(Xoodyak::ArgumentError)
+      expect { Xoodyak.new(counter: "counter") }.to raise_error(Xoodyak::ArgumentError)
+      expect { Xoodyak.new(counter: "counter") }.to raise_error(Xoodyak::Error)
+      expect { Xoodyak.new(counter: "counter") }.to raise_error(::ArgumentError)
+    end
+
+    it "raises ArgumentError if too many positional arguments are passed" do
+      expect { Xoodyak.new(nil, "nonce") }.to raise_error(::ArgumentError)
     end
 
     it "initializes in keyed mode when key is provided" do
@@ -105,7 +109,7 @@ RSpec.describe Xoodyak do
 
     it "supports detached AEAD encrypt and decrypt" do
       nonce = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].pack("C*")
-      st = Xoodyak.new("key", nonce)
+      st = Xoodyak.new("key", nonce: nonce)
       st.absorb("ad")
 
       ct, tag = st.aead_encrypt_detached("message")
@@ -114,7 +118,7 @@ RSpec.describe Xoodyak do
       ].pack("C*")
       expect(tag).to eq(expected_tag)
 
-      st2 = Xoodyak.new("key", nonce)
+      st2 = Xoodyak.new("key", nonce: nonce)
       st2.absorb("ad")
       decrypted = st2.aead_decrypt_detached(ct, tag)
       expect(decrypted).to eq("message")

@@ -3,7 +3,9 @@ use std::ffi::{c_int, c_uchar, c_void};
 use std::mem::MaybeUninit;
 use std::os::raw::c_char;
 use magnus::{
-    prelude::*, scan_args::scan_args, Error, ExceptionClass, RString, Ruby, Value,
+    prelude::*,
+    scan_args::{get_kwargs, scan_args},
+    Error, ExceptionClass, RHash, RString, Ruby, Value,
 };
 use rb_sys::{VALUE, size_t};
 use xoodyak::{XoodyakHash, XoodyakKeyed, XoodyakCommon, XoodyakError, XOODYAK_AUTH_TAG_BYTES};
@@ -242,8 +244,14 @@ impl magnus::DataTypeFunctions for Xoodyak {}
 
 impl Xoodyak {
     fn initialize(rb_self: magnus::typed_data::Obj<Self>, args: &[Value]) -> Result<(), Error> {
-        let args = scan_args::<(), (Option<Option<RString>>, Option<Option<RString>>, Option<Option<RString>>, Option<Option<RString>>), (), (), (), ()>(args)?;
-        let (key, nonce, key_id, counter) = args.optional;
+        let args = scan_args::<(), (Option<Option<RString>>,), (), (), RHash, ()>(args)?;
+        let (key,) = args.optional;
+        let kw = get_kwargs::<_, (), (Option<Option<RString>>, Option<Option<RString>>, Option<Option<RString>>), ()>(
+            args.keywords,
+            &[],
+            &["nonce", "key_id", "counter"],
+        )?;
+        let (nonce, key_id, counter) = kw.optional;
         let key = key.flatten();
         let nonce = nonce.flatten();
         let key_id = key_id.flatten();

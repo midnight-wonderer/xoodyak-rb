@@ -157,12 +157,12 @@ key = "my-secure-key-16"
 nonce = SecureRandom.bytes(16) # Nonces must be unique for each encryption!
 
 # Encrypt with Associated Data
-alice = Xoodyak.new(key, nonce)
+alice = Xoodyak.new(key, nonce: nonce)
 alice.absorb("Associated Data (unencrypted header)")
 ciphertext_with_tag = alice.aead_encrypt("confidential message")
 
 # Decrypt and Verify
-bob = Xoodyak.new(key, nonce)
+bob = Xoodyak.new(key, nonce: nonce)
 bob.absorb("Associated Data (unencrypted header)") # Must match Alice's AD
 
 begin
@@ -186,12 +186,12 @@ key = "my-secure-key-16"
 nonce = SecureRandom.bytes(16)
 
 # Encrypt
-alice = Xoodyak.new(key, nonce)
+alice = Xoodyak.new(key, nonce: nonce)
 alice.absorb("metadata")
 ciphertext, tag = alice.aead_encrypt_detached("confidential message")
 
 # Decrypt and Verify
-bob = Xoodyak.new(key, nonce)
+bob = Xoodyak.new(key, nonce: nonce)
 bob.absorb("metadata")
 
 begin
@@ -212,7 +212,7 @@ Xoodyak supports initializing the keyed state with a variety of optional paramet
 
 ```ruby
 # Initialize with key, nonce, key_id, and counter
-xoodyak = Xoodyak.new(key, nonce, key_id, counter)
+xoodyak = Xoodyak.new(key, nonce: nonce, key_id: key_id, counter: counter)
 ```
 
 > [!WARNING]
@@ -248,8 +248,8 @@ require 'securerandom'
 key = "session-key-1234"
 nonce = SecureRandom.bytes(16)
 
-alice = Xoodyak.new(key, nonce)
-bob = Xoodyak.new(key, nonce)
+alice = Xoodyak.new(key, nonce: nonce)
+bob = Xoodyak.new(key, nonce: nonce)
 
 # Alice sends first message
 ct1 = alice.encrypt("Message 1")
@@ -294,7 +294,7 @@ puts checkpoint.squeeze(16).unpack1("H*")   # Squeezes based on "initial setup d
 
 | Method | Signature | Mode | Description |
 | :--- | :--- | :--- | :--- |
-| `initialize` | `(key=nil, nonce=nil, key_id=nil, counter=nil)` | Any | Creates a Xoodyak instance. Enters keyed mode if a key is provided. |
+| `initialize` | `(key=nil, nonce: nil, key_id: nil, counter: nil)` | Any | Creates a Xoodyak instance. Enters keyed mode if a key is provided. |
 | `absorb` | `(bin: String) -> void` | Any | Absorbs binary data into the state. |
 | `squeeze` | `(len: Integer) -> String` | Any | Squeezes `len` bytes from the state. |
 | `squeeze_key` | `(len: Integer) -> String` | Any | Squeezes `len` key bytes from the state. |
