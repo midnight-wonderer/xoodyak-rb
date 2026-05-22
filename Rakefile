@@ -15,7 +15,7 @@ task build: :compile
 
 GEMSPEC = Gem::Specification.load("xoodyak.gemspec")
 
-RbSys::ExtensionTask.new("xoodyak", GEMSPEC) do |ext|
+RbSys::ExtensionTask.new("xoodyakrb", GEMSPEC) do |ext|
   ext.lib_dir = "lib/xoodyak"
 end
 

@@ -1,6 +1,6 @@
 [package]
-name = "xoodyak-rb"
-version = "0.1.0"
+name = "xoodyakrb"
+version = "0.1.1"
 edition = "2021"
 publish = false
 

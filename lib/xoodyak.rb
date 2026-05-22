@@ -13,12 +13,12 @@ require_relative "xoodyak/version"
 
 begin
   RUBY_VERSION =~ /(\d+\.\d+)/
-  require "xoodyak/#{Regexp.last_match(1)}/xoodyak"
+  require "xoodyak/#{Regexp.last_match(1)}/xoodyakrb"
 rescue LoadError
   begin
-    require_relative "xoodyak/xoodyak"
+    require_relative "xoodyak/xoodyakrb"
   rescue LoadError
-    require "xoodyak/xoodyak"
+    require "xoodyak/xoodyakrb"
   end
 end
 

@@ -296,22 +296,22 @@ checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 
 [[package]]
 name = "xoodyak"
-version = "0.1.0"
-dependencies = [
- "magnus",
- "rb-sys",
- "rb-sys-env",
- "rb-sys-test-helpers",
- "xoodyak 0.8.4",
-]
-
-[[package]]
-name = "xoodyak"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0dad761b2058d5398041155f51876fd2eb94a20db85ee1ab56c6b8f78d18f16b"
 dependencies = [
  "zeroize",
+]
+
+[[package]]
+name = "xoodyakrb"
+version = "0.1.1"
+dependencies = [
+ "magnus",
+ "rb-sys",
+ "rb-sys-env",
+ "rb-sys-test-helpers",
+ "xoodyak",
 ]
 
 [[package]]
