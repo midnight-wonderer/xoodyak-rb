@@ -134,6 +134,22 @@ RSpec.describe Xoodyak do
       expect { st.aead_decrypt_detached("msg", "short_tag") }.to raise_error(Xoodyak::ArgumentError)
     end
 
+    it "raises Xoodyak::VerificationError on aead_decrypt_detached when tag is invalid" do
+      nonce = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].pack("C*")
+      st = Xoodyak.new("key", nonce: nonce)
+      st.absorb("ad")
+      ct, tag = st.aead_encrypt_detached("message")
+
+      st2 = Xoodyak.new("key", nonce: nonce)
+      st2.absorb("ad")
+
+      tampered_tag = tag.dup
+      tampered_tag.setbyte(0, tampered_tag.getbyte(0) ^ 1)
+
+      expect { st2.dup.aead_decrypt_detached(ct, tampered_tag) }.to raise_error(Xoodyak::VerificationError)
+      expect { st2.dup.aead_decrypt_detached(ct, tampered_tag) }.to raise_error(Xoodyak::Error)
+    end
+
     it "can ratchet the state" do
       st = Xoodyak.new("key")
       st.ratchet
